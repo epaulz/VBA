@@ -1,0 +1,166 @@
+Sub ImportDBS()
+
+    Dim strPath As String
+    Dim ThisWorkbook As String
+    
+    ThisWorkbook = ActiveWorkbook.Name
+    
+    Application.FileDialog(msoFileDialogOpen).AllowMultiSelect = False
+    
+    'make the file dialog visible to the user
+    intChoice = Application.FileDialog(msoFileDialogOpen).Show
+    
+    'determine what choice the user made
+    If (intChoice <> 0) Then
+        'get the file path selected by the user
+        strPath = Application.FileDialog(msoFileDialogOpen).SelectedItems(1)
+    End If
+    
+    Filename = Right(strPath, Len(strPath) - InStrRev(strPath, "\"))
+    If (Right(Filename, 3) = "xls" Or Right(Filename, 4) = "xlsx" Or _
+        Right(Filename, 3) = "XLS" Or Right(Filename, 4) = "XLSX") Then
+         'Excel file
+         Application.ScreenUpdating = False
+         Application.DisplayAlerts = False
+         Workbooks(ThisWorkbook).Worksheets("DBS").Cells.Clear
+         Workbooks.Open (strPath)
+         Workbooks(Filename).Worksheets(1).Cells.Copy Destination:=Workbooks(ThisWorkbook).Worksheets("DBS").Cells
+         Workbooks(Filename).Close
+         Application.ScreenUpdating = True
+         Application.DisplayAlerts = True
+    Else
+        MsgBox "You must select an Excel file."
+        Exit Sub
+    End If
+
+End Sub
+
+Sub Import024()
+    
+    Dim strPath As String
+    Dim ThisWorkbook As String
+    
+    ThisWorkbook = ActiveWorkbook.Name
+    
+    Application.FileDialog(msoFileDialogOpen).AllowMultiSelect = False
+    
+    'make the file dialog visible to the user
+    intChoice = Application.FileDialog(msoFileDialogOpen).Show
+    
+    'determine what choice the user made
+    If (intChoice <> 0) Then
+        'get the file path selected by the user
+        strPath = Application.FileDialog(msoFileDialogOpen).SelectedItems(1)
+    End If
+    
+    Filename = Right(strPath, Len(strPath) - InStrRev(strPath, "\"))
+    If (Right(Filename, 3) = "xls" Or Right(Filename, 4) = "xlsx" Or _
+        Right(Filename, 3) = "XLS" Or Right(Filename, 4) = "XLSX") Then
+         'excel file
+         Application.ScreenUpdating = False
+         Application.DisplayAlerts = False
+         Workbooks(ThisWorkbook).Worksheets("024").Cells.Clear
+         Workbooks.Open (strPath)
+         Workbooks(Filename).Worksheets(1).Cells.Copy Destination:=Workbooks(ThisWorkbook).Worksheets("024").Cells
+         Workbooks(Filename).Close
+         Application.ScreenUpdating = True
+         Application.DisplayAlerts = True
+    Else
+        MsgBox "You must select an Excel file."
+        Exit Sub
+    End If
+    
+End Sub
+
+Sub compare()
+
+    Dim i, j As Integer
+    Dim currDate, newDate, currPart, currQty As String
+    Dim month, day, year As String
+    
+    With Worksheets("024")
+        
+        While (.Cells(1, 1).Value <> "Material")
+            .Columns(1).Delete
+        Wend
+        
+        'start cycle
+        i = 2
+        While (Len(.Cells(i, 1).Value) > 0)
+            currPart = .Cells(i, 1).Value
+            j = 14
+            
+            While (j < 63)
+                If (.Cells(i, j).Value = 0) Then
+                    j = j + 1
+                ElseIf (.Cells(i, j).Value > 0) Then
+                    currQty = .Cells(i, j).Value
+                    currDate = .Cells(1, j).Value
+                    
+                    If (Left(currDate, 1) = "0") Then
+                        month = Right(Left(currDate, 2), 1)
+                    Else
+                        month = Left(currDate, 2)
+                    End If
+                    
+                    If (Left(Right(currDate, 7), 1) = "0") Then
+                        day = Left(Right(currDate, 6), 1)
+                    Else
+                        day = Left(Right(currDate, 7), 2)
+                    End If
+                    
+                    year = Right(currDate, 4)
+                    
+                    newDate = month & "/" & day
+                    
+                    searchDBS currPart, newDate, currQty
+                    j = j + 1
+                End If
+            Wend
+            i = i + 1
+        Wend
+    End With
+    
+    ThisWorkbook.Worksheets("DBS").Activate
+    
+End Sub
+
+Sub searchDBS(ByVal part As String, ByVal the_date As String, ByVal qty As String)
+
+    Dim k, l As Integer
+    Dim temp1, temp2 As String
+    
+    With Worksheets("DBS")
+        k = 5
+        l = 6
+        While (.Cells(k, 2).Text <> part)
+            temp1 = .Cells(k, 2).Text 'for debugging
+            If (k > 10000) Then
+                MSG1 = MsgBox("Part #" & part & " not found.  Continue anyway?", vbYesNo)
+                If (MSG1 = vbYes) Then
+                    Exit Sub
+                ElseIf (MSG1 = vbNo) Then End
+                End If
+            End If
+            k = k + 6
+        Wend
+        
+        While (.Cells(4, l).Text <> the_date)
+            temp2 = .Cells(4, l).Text 'for debugging
+            l = l + 1
+        Wend
+        
+        If (.Cells(4, l).Text = the_date) Then
+            If (.Cells(k + 2, l).Value = qty) Then
+                .Cells(k + 2, l).Interior.Color = RGB(0, 255, 0)
+            ElseIf (.Cells(k + 2, l).Value > qty) Then
+                .Cells(k + 2, l).Interior.Color = RGB(244, 241, 66)
+            ElseIf (.Cells(k + 2, l).Value < qty) Then
+                .Cells(k + 2, l).Interior.Color = RGB(244, 66, 66)
+            End If
+        Else
+            l = l + 1
+        End If
+    End With
+                    
+End Sub

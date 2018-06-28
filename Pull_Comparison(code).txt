@@ -1,0 +1,740 @@
+Sub CompareData()
+    Dim i As Integer
+    Dim j As Integer
+    Dim k As Integer
+    Dim dateCol As Integer
+    Dim SAP As Worksheet
+    Dim TXT As Worksheet
+    Set SAP = Worksheets("SAP")
+    Set TXT = Worksheets("TXT_Formatted")
+    Set cmp = Worksheets("Comparison")
+    Dim workingDate As Date
+    
+    cmp.Range("A2:Z10000").Clear
+    
+    cmp.Range("F2:F10000").FormatConditions.Add Type:=xlCellValue, Operator:=xlNotEqual, _
+        Formula1:="=0"
+    cmp.Range("F2:F10000").FormatConditions(cmp.Range("F2:F10000").FormatConditions.Count).SetFirstPriority
+    With cmp.Range("F2:F10000").FormatConditions(1).Font
+        .Strikethrough = False
+        .TintAndShade = 0
+    End With
+    With cmp.Range("F2:F10000").FormatConditions(1).Interior
+        .pattern = xlSolid
+        .PatternColorIndex = xlAutomatic
+        .Color = 5263615
+        .TintAndShade = 0
+    End With
+    cmp.Range("F2:F10000").FormatConditions(1).StopIfTrue = False
+    
+    workingDate = TXT.Cells(2, 1).Value
+    j = 2
+    
+    With SAP
+        If (.Cells(1, 1).Value = "Material") Then
+            'SDK
+            i = 1
+            dateCol = 100
+            Do While Len(.Cells(1, i).Value) > 0
+                If (.Cells(1, i).Value = workingDate) Then
+                    dateCol = i
+                    i = 100
+                End If
+                i = i + 1
+            Loop
+            
+            If (.Cells(1, dateCol).Value <> workingDate) Then
+                MsgBox "SAP dates do not match pull date! (" & workingDate & ")"
+                Exit Sub
+            End If
+            
+            i = 2
+            Do While Len(.Cells(i, 1).Value) > 0
+                If (Len(.Cells(i, dateCol).Value) > 0) Then
+                    cmp.Cells(j, 1).Value = workingDate
+                    cmp.Cells(j, 2).Value = .Cells(i, 1).Value
+                    cmp.Cells(j, 3).Value = .Cells(i, 3).Value
+                    cmp.Cells(j, 4).Value = .Cells(i, dateCol).Value
+                    cmp.Cells(j, 6).FormulaR1C1 = "=RC[-2]-RC[-1]"
+                    j = j + 1
+                End If
+                i = i + 1
+            Loop
+        Else
+            i = 1
+            dateCol = 100
+            Do While Len(.Cells(1, i).Value) > 0
+                If (.Cells(1, i).Value = workingDate) Then
+                    dateCol = i
+                    i = 100
+                End If
+                i = i + 1
+            Loop
+            
+            If (.Cells(1, dateCol).Value <> workingDate) Then
+                MsgBox "SAP dates do not match pull date! (" & workingDate & ")"
+                Exit Sub
+            End If
+            
+            i = 2
+            Do While Len(.Cells(i, 1).Value) > 0
+                If (Len(.Cells(i, dateCol).Value) > 0) Then
+                    cmp.Cells(j, 1).Value = workingDate
+                    cmp.Cells(j, 2).Value = .Cells(i, 2).Value
+                    cmp.Cells(j, 3).Value = .Cells(i, 7).Value
+                    cmp.Cells(j, 4).Value = .Cells(i, dateCol).Value
+                    cmp.Cells(j, 6).FormulaR1C1 = "=RC[-2]-RC[-1]"
+                    j = j + 1
+                End If
+                i = i + 1
+            Loop
+        End If
+    End With
+    
+    With TXT
+    i = 2
+    
+    Do While Len(.Cells(i, 1).Value) > 0
+        k = 2
+        Do While k < j And .Cells(i, 3).Value <> cmp.Cells(k, 3)
+            k = k + 1
+        Loop
+        
+        If .Cells(i, 3).Value = cmp.Cells(k, 3) Then
+            cmp.Cells(k, 5).Value = cmp.Cells(k, 5).Value + .Cells(i, 2).Value
+            cmp.Cells(k, 7).Value = Trim(cmp.Cells(j, 7).Value & " " & .Cells(i, 4).Value)
+        Else
+            cmp.Cells(j, 1).Value = workingDate
+            cmp.Cells(j, 2).Value = ""
+            cmp.Cells(j, 3).Value = .Cells(i, 3).Value
+            cmp.Cells(j, 5).Value = .Cells(i, 2).Value
+            cmp.Cells(j, 6).FormulaR1C1 = "=RC[-2]-RC[-1]"
+            cmp.Cells(j, 7).Value = Trim(cmp.Cells(j, 7).Value & " " & .Cells(i, 4).Value)
+            j = j + 1
+        End If
+        i = i + 1
+    Loop
+    
+    End With
+    cmp.Activate
+End Sub
+
+Sub FormatSAP()
+    Dim i As Integer
+    Dim j As Integer
+    
+    With Worksheets("SAP")
+        If (.Cells(1, 1).Value = "Material") Then
+            'SDK
+            i = 12
+            Do While .Cells(1, i).Value <> "Unrestricted"
+                .Cells(1, i).Value = Mid(.Cells(1, i).Value, 4, 2) & "/" & Left(.Cells(1, i).Value, 2) & "/" & Right(.Cells(1, i).Value, 4)
+                i = i + 1
+            Loop
+        
+        ElseIf (.Cells(1, 1).Value = "Cntl") Then
+            'Imported as spreadsheet
+            
+            .Cells(1, 1).Value = "MRP" '
+            .Cells(1, 2).Value = "Material"
+            .Cells(1, 3).Value = "Description"
+            .Cells(1, 4).Value = "STF"
+            .Cells(1, 5).Value = "WHSE"
+            .Cells(1, 6).Value = "PLNT"
+            .Cells(1, 7).Value = "PO #"
+            .Cells(1, 8).Value = "Supplier #"
+            .Cells(1, 9).Value = "Supplier Name"
+            .Cells(1, 10).Value = "MRP Date"
+            .Cells(1, 11).Value = "Delfor Date"
+            .Cells(1, 12).Value = "Delfor Time"
+            .Cells(1, 13).Value = "REL #"
+            .Cells(1, 64).Value = "Last GR Dt_"
+            .Columns(14).Delete
+            
+            .Columns("A:BJ").AutoFit
+            
+            i = 14
+            j = 0
+            Do While j < 5
+                If Len(.Cells(1, i).Value) > 7 And Len(.Cells(1, i).Value) < 11 Then
+                    j = 0
+                    'It's a date row, format to something that actually makes sense...
+                    '.Cells(1, i).Value = CDate(Left(.Cells(1, i).Value, Len(.Cells(1, i).Value) - 2) & "/" & Right(.Cells(1, i).Value, 2) & "/" & Worksheets("Main").Range("G22").Value)
+                Else
+                    .Columns(i).Delete
+                    i = i - 1
+                    j = j + 1
+                End If
+                
+                
+                i = i + 1
+            Loop
+            
+            'End If
+            
+            j = 0
+            i = 3
+            Do While j < 100
+                If Len(.Cells(i, 1).Value) > 4 Then
+                    .Rows(i).Delete
+                    i = i - 1
+                    j = 0
+                ElseIf Len(.Cells(i, 1).Value) > 0 Then
+                    j = 0
+                Else
+                    .Rows(i).Delete
+                    i = i - 1
+                    j = j + 1
+                End If
+                
+                i = i + 1
+            Loop
+            
+        ElseIf (.Cells(1, 1).Value = "") Then
+            'Imported as text-with-tabs
+            
+            .Rows(1).Delete
+            .Rows(2).Delete
+            .Columns(1).Delete
+            .Cells(1, 1).Value = "MRP" '
+            .Cells(1, 2).Value = "Material"
+            .Cells(1, 3).Value = "Description"
+            .Cells(1, 4).Value = "STF"
+            .Cells(1, 5).Value = "WHSE"
+            .Cells(1, 6).Value = "PLNT"
+            .Cells(1, 7).Value = "PO #"
+            .Cells(1, 8).Value = "Supplier #"
+            .Cells(1, 9).Value = "Supplier Name"
+            .Cells(1, 10).Value = "MRP Date"
+            .Cells(1, 11).Value = "Delfor Date"
+            .Cells(1, 12).Value = "Delfor Time"
+            .Cells(1, 13).Value = "REL #"
+            .Cells(1, 64).Value = "Last GR Dt_"
+            .Columns(14).Delete
+            
+            .Columns("A:BJ").AutoFit
+            
+            i = 14
+            j = 0
+            Do While j < 5
+                If Len(.Cells(1, i).Value) > 7 And Len(.Cells(1, i).Value) < 11 Then
+                    j = 0
+                    'It's a date row, format to something that actually makes sense...
+                    '.Cells(1, i).Value = CDate(Left(.Cells(1, i).Value, Len(.Cells(1, i).Value) - 2) & "/" & Right(.Cells(1, i).Value, 2) & "/" & Worksheets("Main").Range("G22").Value)
+                Else
+                    .Columns(i).Delete
+                    i = i - 1
+                    j = j + 1
+                End If
+                
+                
+                i = i + 1
+            Loop
+            
+            'End If
+            
+            j = 0
+            i = 3
+            Do While j < 100
+                If Len(.Cells(i, 1).Value) > 4 Then
+                    .Rows(i).Delete
+                    i = i - 1
+                    j = 0
+                ElseIf Len(.Cells(i, 1).Value) > 0 Then
+                    j = 0
+                Else
+                    .Rows(i).Delete
+                    i = i - 1
+                    j = j + 1
+                End If
+                
+                i = i + 1
+            Loop
+        End If
+    End With
+End Sub
+
+Function FormatText(j As Integer) As Integer
+    Dim i As Integer
+    Dim k As Integer
+    Dim setCount As Integer
+    Dim valFound As Integer
+    Dim setStart As Integer
+    Dim pulNum As String
+    Dim formatted As Worksheet
+    
+    pulNum = ""
+    Set formatted = Worksheets("TXT_Formatted")
+    If (j = 2) Then formatted.Cells.Clear
+    
+    
+    With Worksheets("TXT")
+'        If (Left(.Cells(1, 1).Value, 1) = ".") Then 'This is a Penske
+'
+'            i = 1
+'            formatted.Cells(1, 1).Value = "Req Date"
+'            formatted.Cells(1, 2).Value = "Req Qty"
+'            formatted.Cells(1, 3).Value = "PO #"
+'            formatted.Cells(1, 4).Value = "Pull #"
+'            Do While Len(.Cells(i, 1).Value) > 0
+'                Do While .Cells(i, 1).Value <> "Cntrs " And Len(.Cells(i, 1).Value) > 0
+'                    If (Left(.Cells(i, 1).Value, 7) = "PuL #: " And pulNum = "") Then
+'                        pulNum = Trim(Right(.Cells(i, 1).Value, 9))
+'                        k = 1
+'                        Do While k < j
+'                            If (pulNum = formatted.Cells(k, 4)) Then
+'                                MsgBox "Pull " & pulNum & " imported multiple times, ignoring copies"
+'                                Exit Function
+'                            End If
+'                            k = k + 1
+'                        Loop
+'                    End If
+'                    i = i + 1
+'                Loop
+'                i = i + 1
+'                'MsgBox i
+'                Do While InStr(.Cells(i, 1).Value, "/") > 0 And InStr(.Cells(i, 1).Value, "/") <= 3 And Len(.Cells(i, 1).Value) > 0
+'                    formatted.Cells(j, 1).Value = Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))
+'                    If ((formatted.Cells(2, 1).Value <> formatted.Cells(j, 1).Value)) Then
+'                        MsgBox "Date on Current PuL (" & pulNum & ", " & formatted.Cells(j, 1).Value & ") does not match first Puls date, " & formatted.Cells(2, 1).Value & vbNewLine & "Current PuL not imported"
+'                        formatted.Cells(j, 1).Clear
+'                        Exit Function
+'                    End If
+'                    formatted.Cells(j, 4).Value = pulNum
+'                    .Cells(i, 1).Value = Right(.Cells(i, 1).Value, Len(.Cells(i, 1).Value) - InStr(.Cells(i, 1).Value, " "))
+'                    .Cells(i, 1).Value = Right(.Cells(i, 1).Value, Len(.Cells(i, 1).Value) - InStr(.Cells(i, 1).Value, " "))
+'                    formatted.Cells(j, 2).Value = Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))
+'                    Do While (Len(Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))) < 6)
+'                        .Cells(i, 1).Value = Right(.Cells(i, 1).Value, Len(.Cells(i, 1).Value) - InStr(.Cells(i, 1).Value, " "))
+'                    Loop
+'                    formatted.Cells(j, 3).Value = Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))
+'                    i = i + 1
+'                    j = j + 1
+'                Loop
+'                i = i + 1
+'            Loop
+        If (Left(.Cells(1, 1).Value, 3) = "Hub") Or (Left(.Cells(1, 1).Value, 1) = ".") Then 'This is Benore or Penske
+            'j = 2
+            i = 2
+            formatted.Cells(1, 1).Value = "Req Date"
+            formatted.Cells(1, 2).Value = "Req Qty"
+            formatted.Cells(1, 3).Value = "PO #"
+            formatted.Cells(1, 4).Value = "Pull #"
+            Do While i < 10000
+                'New set! Find start of new set
+                Do While (InStr(.Cells(i, 1).Value, "/") > 3 Or InStr(.Cells(i, 1).Value, "/") < 1 Or Left(.Cells(i, 1).Value, 2) = "#/") And i < 10000
+                    If (Left(.Cells(i, 1).Value, 15) = "Pickup List #: " And pulNum = "") Then
+                        pulNum = Trim(Right(Left(.Cells(i, 1).Value, 22), 8))
+                        k = 1
+                        Do While k < j
+                            If (pulNum = formatted.Cells(k, 4)) Then
+                                MsgBox "Pull " & pulNum & " imported multiple times, ignoring copies"
+                                Exit Function
+                            End If
+                            k = k + 1
+                        Loop
+                    End If
+                    i = i + 1
+                Loop
+                'Found start of new set
+                'Parse and complete set
+                'While first
+                setCount = 0
+                valFound = 0
+                setStart = j
+                'While start of line is date values parsing first part of set...
+                Do While InStr(.Cells(i, 1).Value, "/") > 0 And InStr(.Cells(i, 1).Value, "/") <= 3 And Len(.Cells(i, 1).Value) > 0
+                    'Find how many important values are in each line
+                    'Set Date
+                    formatted.Cells(j, 1).Value = Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))
+                    formatted.Cells(j, 4).Value = pulNum
+                    valFound = 1
+                    .Cells(i, 1).Value = Right(.Cells(i, 1).Value, Len(.Cells(i, 1).Value) - InStr(.Cells(i, 1).Value, " "))
+                    'If there is more on this line trim the part# out
+                    If (Len(.Cells(i, 1).Value) > 1) Then
+                        If (InStr(.Cells(i, 1).Value, " ") = 0) Then
+                            .Cells(i, 1).Value = ""
+                        Else
+                            .Cells(i, 1).Value = Right(.Cells(i, 1).Value, Len(.Cells(i, 1).Value) - InStr(.Cells(i, 1).Value, " "))
+                        End If
+                    End If
+                    
+                    'If length is still > 1 then the Req Qty is also on this line
+                    If (Len(.Cells(i, 1).Value) > 0) Then
+                        If (InStr(.Cells(i, 1).Value, " ") = 0) Then
+                            formatted.Cells(j, 2).Value = .Cells(i, 1).Value
+                        Else
+                            formatted.Cells(j, 2).Value = Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))
+                        End If
+                        .Cells(i, 1).Value = Right(.Cells(i, 1).Value, Len(.Cells(i, 1).Value) - InStr(.Cells(i, 1).Value, " "))
+                        valFound = 2
+                        'Trim the string until PO # is found or string ends
+                        Do While Len(Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))) < 5 And Len(Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))) > 0
+                            .Cells(i, 1).Value = Right(.Cells(i, 1).Value, Len(.Cells(i, 1).Value) - InStr(.Cells(i, 1).Value, " "))
+                        Loop
+                        'PO # found!
+                        If Len(Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))) > 5 Then
+                            formatted.Cells(j, 3).Value = Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))
+                            formatted.Cells(j, 3).Value = Right(formatted.Cells(j, 3), 7)
+                            valFound = 3
+                        End If
+                    End If
+                    
+                    
+                    setCount = setCount + 1
+                    j = j + 1
+                    i = i + 1
+                Loop
+                
+                'First loop of set over, find next loop by checking the first value for a int
+                If valFound > 0 Then
+                    Do While valFound < 3
+                        Do While (Asc(.Cells(i, 1).Value & " ") < 48 Or Asc(.Cells(i, 1).Value & " ") > 57)
+                            i = i + 1
+                        Loop
+                        'Found new set
+                        j = setStart
+                        Do While j < setStart + setCount
+                            If (valFound = 1) Then
+                                'Still looking for Req Qty
+                                'Clear until Req Qty is found
+                                Do While Len(Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))) > 8 And InStr(.Cells(i, 1).Value, " ") > 0 And Len(.Cells(i, 1).Value) > 0
+                                    .Cells(i, 1).Value = Right(.Cells(i, 1).Value, Len(.Cells(i, 1).Value) - InStr(.Cells(i, 1).Value, " "))
+                                Loop
+                                If (Len(Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))) < 8 And Len(.Cells(i, 1).Value) > 0) Then
+                                    'Req Qty found, grab it
+                                    If (InStr(.Cells(i, 1).Value, " ") = 0) Then
+                                        formatted.Cells(j, 2).Value = .Cells(i, 1).Value
+                                    Else
+                                        formatted.Cells(j, 2).Value = Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))
+                                    End If
+                                    .Cells(i, 1).Value = Right(.Cells(i, 1).Value, Len(.Cells(i, 1).Value) - InStr(.Cells(i, 1).Value, " "))
+                                    If (j = setStart + setCount - 1) Then valFound = 2
+                                    
+                                    'Check for PO #
+                                    Do While Len(.Cells(i, 1).Value) > 6 And Right(.Cells(i, 1).Value, Len(.Cells(i, 1).Value) - InStr(.Cells(i, 1).Value, " ")) < 6
+                                        .Cells(i, 1).Value = Right(.Cells(i, 1).Value, Len(.Cells(i, 1).Value) - InStr(.Cells(i, 1).Value, " "))
+                                    Loop
+                                    If Len(.Cells(i, 1).Value) > 6 Then
+                                        MsgBox j
+                                        'PO found
+                                        formatted.Cells(j, 3).Value = Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))
+                                        If (j = setStart + setCount - 1) Then valFound = 3
+                                    End If
+                                    j = j + 1
+                                End If
+                            Else
+                                Do While (Asc(.Cells(i, 1).Value & " ") < 48 Or Asc(.Cells(i, 1).Value & " ") > 57)
+                                    i = i + 1
+                                Loop
+                                'Looking for PO #
+                                If (Len(.Cells(i, 1).Value) > 5) Then
+                                    Do While Len(.Cells(i, 1).Value) > 6 And InStr(.Cells(i, 1).Value, " ") < 6
+                                        .Cells(i, 1).Value = Right(.Cells(i, 1).Value, Len(.Cells(i, 1).Value) - InStr(.Cells(i, 1).Value, " "))
+                                    Loop
+
+                                    If (Len(.Cells(i, 1).Value) > 8) Then
+                                        'PO found
+                                        ' NEED TO CUT FIRST 2 DIGITS OFF OF THE PO NUMBER
+                                        formatted.Cells(j, 3).Value = Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))
+                                        formatted.Cells(j, 3).Value = Right(formatted.Cells(j, 3), 7)
+                                        If (j = setStart + setCount - 1) Then valFound = 3
+                                        j = j + 1
+                                    End If
+                                End If
+                            End If
+                            If (valFound < 3) Then i = i + 1
+                        Loop
+                        If (valFound < 3) Then i = i + 1
+                    Loop
+                    'j = setStart
+                End If
+                If (valFound < 3) Then i = i + 1
+            Loop
+        Else 'This is Protrans
+            'j = 2
+            i = 2
+            formatted.Cells(1, 1).Value = "Req Date"
+            formatted.Cells(1, 2).Value = "Req Qty"
+            formatted.Cells(1, 3).Value = "PO #"
+            formatted.Cells(1, 4).Value = "Pull #"
+            Do While i < 10000
+                'New set! Find start of new set
+                Do While (InStr(.Cells(i, 1).Value, "/") > 3 Or InStr(.Cells(i, 1).Value, "/") < 1 Or Left(.Cells(i, 1).Value, 2) = "#/") And i < 10000
+                    If (Left(.Cells(i, 1).Value, 6) = "Notes:") Then
+                        .Rows(i).Delete
+                        .Rows(i).Delete
+                        .Rows(i).Delete
+'                        k = i
+'                        Do While (Left(.Cells(i, 1).Value, 8) <> "Required")
+'                            .Rows(k).Delete
+'                        Loop
+                    ElseIf (Left(.Cells(i, 1).Value, 5) = "PUL: " And pulNum = "") Then
+                        pulNum = Trim(Right(.Cells(i, 1).Value, 10))
+                        k = 1
+                        Do While k < j
+                            If (pulNum = formatted.Cells(k, 4)) Then
+                                MsgBox "Pull " & pulNum & " imported multiple times, ignoring copies"
+                                Exit Function
+                            End If
+                            k = k + 1
+                        Loop
+                    End If
+                    i = i + 1
+                Loop
+                'Found start of new set
+                'Parse and complete set
+                'While first
+                setCount = 0
+                valFound = 0
+                setStart = j
+                'While start of line is date values parsing first part of set...
+                Do While InStr(.Cells(i, 1).Value, "/") > 0 And InStr(.Cells(i, 1).Value, "/") <= 3 And Len(.Cells(i, 1).Value) > 0
+                    'Find how many important values are in each line
+                    'Set Date
+                    formatted.Cells(j, 1).Value = Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))
+                    formatted.Cells(j, 4).Value = pulNum
+                    valFound = 1
+                    .Cells(i, 1).Value = Right(.Cells(i, 1).Value, Len(.Cells(i, 1).Value) - InStr(.Cells(i, 1).Value, " "))
+                    'If there is more on this line trim the part# out
+                    If (Len(.Cells(i, 1).Value) > 1) Then
+                        If (InStr(.Cells(i, 1).Value, " ") = 0) Then
+                            .Cells(i, 1).Value = ""
+                        Else
+                            .Cells(i, 1).Value = Right(.Cells(i, 1).Value, Len(.Cells(i, 1).Value) - InStr(.Cells(i, 1).Value, " "))
+                        End If
+                    End If
+                    
+                    'If length is still > 1 then the Req Qty is also on this line
+                    If (Len(.Cells(i, 1).Value) > 0) Then
+                        If (InStr(.Cells(i, 1).Value, " ") = 0) Then
+                            formatted.Cells(j, 2).Value = .Cells(i, 1).Value
+                        Else
+                            formatted.Cells(j, 2).Value = Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))
+                        End If
+                        .Cells(i, 1).Value = Right(.Cells(i, 1).Value, Len(.Cells(i, 1).Value) - InStr(.Cells(i, 1).Value, " "))
+                        valFound = 2
+                        'Trim the string until PO # is found or string ends
+                        Do While Len(Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))) < 5 And Len(Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))) > 0
+                            .Cells(i, 1).Value = Right(.Cells(i, 1).Value, Len(.Cells(i, 1).Value) - InStr(.Cells(i, 1).Value, " "))
+                        Loop
+                        'PO # found!
+                        If Len(Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))) > 5 Then
+                            formatted.Cells(j, 3).Value = Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))
+                            formatted.Cells(j, 3).Value = Right(formatted.Cells(j, 3), 7)
+                            valFound = 3
+                        End If
+                    End If
+                    
+                    
+                    setCount = setCount + 1
+                    j = j + 1
+                    i = i + 1
+                Loop
+                
+                'First loop of set over, find next loop by checking the first value for a int
+                If valFound > 0 Then
+                    Do While valFound < 3
+                        Do While (Asc(.Cells(i, 1).Value & " ") < 48 Or Asc(.Cells(i, 1).Value & " ") > 57)
+                            i = i + 1
+                        Loop
+                        'Found new set
+                        j = setStart
+                        Do While j < setStart + setCount
+                            If (valFound = 1) Then
+                                'Still looking for Req Qty
+                                'Clear until Req Qty is found
+                                Do While Len(Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))) > 8 And InStr(.Cells(i, 1).Value, " ") > 0 And Len(.Cells(i, 1).Value) > 0
+                                    .Cells(i, 1).Value = Right(.Cells(i, 1).Value, Len(.Cells(i, 1).Value) - InStr(.Cells(i, 1).Value, " "))
+                                Loop
+                                If (Len(Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))) < 8 And Len(.Cells(i, 1).Value) > 0) Then
+                                    'Req Qty found, grab it
+                                    If (InStr(.Cells(i, 1).Value, " ") = 0) Then
+                                        formatted.Cells(j, 2).Value = .Cells(i, 1).Value
+                                    Else
+                                        formatted.Cells(j, 2).Value = Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))
+                                    End If
+                                    .Cells(i, 1).Value = Right(.Cells(i, 1).Value, Len(.Cells(i, 1).Value) - InStr(.Cells(i, 1).Value, " "))
+                                    If (j = setStart + setCount - 1) Then valFound = 2
+                                    
+                                    'Check for PO #
+                                    Do While Len(.Cells(i, 1).Value) > 6 And Right(.Cells(i, 1).Value, Len(.Cells(i, 1).Value) - InStr(.Cells(i, 1).Value, " ")) < 6
+                                        .Cells(i, 1).Value = Right(.Cells(i, 1).Value, Len(.Cells(i, 1).Value) - InStr(.Cells(i, 1).Value, " "))
+                                    Loop
+                                    If Len(.Cells(i, 1).Value) > 6 Then
+                                        MsgBox j
+                                        'PO found
+                                        formatted.Cells(j, 3).Value = Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))
+                                        If (j = setStart + setCount - 1) Then valFound = 3
+                                    End If
+                                    j = j + 1
+                                End If
+                            Else
+                                Do While (Asc(.Cells(i, 1).Value & " ") < 48 Or Asc(.Cells(i, 1).Value & " ") > 57)
+                                    i = i + 1
+                                Loop
+                                'Looking for PO #
+                                If (Len(.Cells(i, 1).Value) > 5) Then
+                                    Do While Len(.Cells(i, 1).Value) > 6 And InStr(.Cells(i, 1).Value, " ") < 6
+                                        .Cells(i, 1).Value = Right(.Cells(i, 1).Value, Len(.Cells(i, 1).Value) - InStr(.Cells(i, 1).Value, " "))
+                                    Loop
+
+                                    If (Len(.Cells(i, 1).Value) > 8) Then
+                                        'PO found
+                                        ' NEED TO CUT FIRST 2 DIGITS OFF OF THE PO NUMBER
+                                        formatted.Cells(j, 3).Value = Left(.Cells(i, 1).Value, InStr(.Cells(i, 1).Value, " "))
+                                        formatted.Cells(j, 3).Value = Right(formatted.Cells(j, 3), 7)
+                                        If (j = setStart + setCount - 1) Then valFound = 3
+                                        j = j + 1
+                                    End If
+                                End If
+                            End If
+                            If (valFound < 3) Then i = i + 1
+                        Loop
+                        If (valFound < 3) Then i = i + 1
+                    Loop
+                    'j = setStart
+                End If
+                If (valFound < 3) Then i = i + 1
+            Loop
+        End If
+    End With
+    
+    FormatText = j
+End Function
+Sub ImportText()
+    MsgBox "Please select ALL pulls you wish to import. Use CTRL and left-click to select multiple files."
+    'Dim strPath As String
+    Dim k As Integer
+    Application.FileDialog(msoFileDialogOpen).AllowMultiSelect = True
+    'make the file dialog visible to the user
+    intChoice = Application.FileDialog(msoFileDialogOpen).Show
+    'determine what choice the user made
+    If intChoice <> 0 Then
+        'get the file path selected by the user
+    End If
+    k = 2
+    For Each strPath In Application.FileDialog(msoFileDialogOpen).SelectedItems
+        Worksheets("TXT").Cells.Clear
+        Worksheets("TXT").Activate
+        With Worksheets("TXT").QueryTables.Add(Connection:= _
+            "TEXT;" & strPath, Destination:=Range("$A$1") _
+            )
+            .Name = "Sample"
+            .FieldNames = True
+            .RowNumbers = False
+            .FillAdjacentFormulas = False
+            .PreserveFormatting = True
+            .RefreshOnFileOpen = False
+            .RefreshStyle = xlInsertDeleteCells
+            .SavePassword = False
+            .SaveData = True
+            .AdjustColumnWidth = True
+            .RefreshPeriod = 0
+            .TextFilePromptOnRefresh = False
+            .TextFilePlatform = 437
+            .TextFileStartRow = 1
+            .TextFileParseType = xlDelimited
+            .TextFileTextQualifier = xlTextQualifierDoubleQuote
+            .TextFileConsecutiveDelimiter = False
+            .TextFileTabDelimiter = True
+            .TextFileSemicolonDelimiter = False
+            .TextFileCommaDelimiter = True
+            .TextFileSpaceDelimiter = False
+            .TextFileColumnDataTypes = Array(1, 1, 1, 1, 1, 1)
+            .TextFileTrailingMinusNumbers = True
+            .Refresh BackgroundQuery:=False
+        End With
+        
+        Dim xConect As Object
+    
+    
+        For Each xConect In ActiveWorkbook.Connections
+        If UCase(xConect.Name) Like "*" Then xConect.Delete
+        Next xConect
+        k = FormatText(k)
+    Next strPath
+            
+   
+    Worksheets("Main").Activate
+End Sub
+
+Sub ImportSAP()
+    Dim strPath As String
+    Dim ThisWorkbook As String
+    
+    ThisWorkbook = ActiveWorkbook.Name
+    
+    Application.FileDialog(msoFileDialogOpen).AllowMultiSelect = False
+    'make the file dialog visible to the user
+    intChoice = Application.FileDialog(msoFileDialogOpen).Show
+    'determine what choice the user made
+    If intChoice <> 0 Then
+        'get the file path selected by the user
+        strPath = Application.FileDialog( _
+            msoFileDialogOpen).SelectedItems(1)
+    End If
+    
+    
+    
+    '-------------------------
+        
+    Filename = Right(strPath, Len(strPath) - InStrRev(strPath, "\"))
+    If Right(Filename, 3) = "xls" Or Right(Filename, 4) = "xlsx" Or _
+    Right(Filename, 3) = "XLS" Or Right(Filename, 4) = "XLSX" Then
+        'Excel file
+        Application.ScreenUpdating = False
+        Application.DisplayAlerts = False
+        Workbooks(ThisWorkbook).Worksheets("SAP").Cells.Clear
+         
+        Workbooks.Open (strPath)
+            Workbooks(Filename).Worksheets(1).Cells.Copy _
+            Destination:=Workbooks(ThisWorkbook).Worksheets("SAP").Cells
+        Workbooks(Filename).Close
+        
+        Application.ScreenUpdating = True
+        Application.DisplayAlerts = True
+    Else
+        'Other file
+        Worksheets("SAP").Cells.Clear
+        Worksheets("SAP").Activate
+        With Worksheets("SAP").QueryTables.Add(Connection:= _
+            "TEXT;" & strPath, Destination:=Range("$A$1") _
+            )
+            .Name = "Sample"
+            .FieldNames = True
+            .RowNumbers = False
+            .FillAdjacentFormulas = False
+            .PreserveFormatting = True
+            .RefreshOnFileOpen = False
+            .RefreshStyle = xlInsertDeleteCells
+            .SavePassword = False
+            .SaveData = True
+            .AdjustColumnWidth = True
+            .RefreshPeriod = 0
+            .TextFilePromptOnRefresh = False
+            .TextFilePlatform = 437
+            .TextFileStartRow = 1
+            .TextFileParseType = xlDelimited
+            .TextFileTextQualifier = xlTextQualifierDoubleQuote
+            .TextFileConsecutiveDelimiter = False
+            .TextFileTabDelimiter = True
+            .TextFileSemicolonDelimiter = False
+            .TextFileCommaDelimiter = False
+            .TextFileSpaceDelimiter = False
+            .TextFileColumnDataTypes = Array(1, 1, 1, 1, 1, 1, 1, 1, 1)
+            .TextFileTrailingMinusNumbers = True
+            .Refresh BackgroundQuery:=False
+        End With
+        
+        Dim xConect As Object
+    
+    
+        For Each xConect In ActiveWorkbook.Connections
+        If UCase(xConect.Name) Like "*" Then xConect.Delete
+        Next xConect
+   End If
+   
+    Worksheets("Main").Activate
+    FormatSAP
+End Sub

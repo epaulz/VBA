@@ -1,0 +1,611 @@
+Sub ImportBULK()
+    
+    Dim strPath As String
+    Dim ThisWorkbook As String
+    
+    ThisWorkbook = ActiveWorkbook.Name
+    
+    Application.FileDialog(msoFileDialogOpen).AllowMultiSelect = False
+    
+    'make the file dialog visible to the user
+    intChoice = Application.FileDialog(msoFileDialogOpen).Show
+    
+    'determine what choice the user made
+    If intChoice <> 0 Then
+        'get the file path selected by the user
+        strPath = Application.FileDialog(msoFileDialogOpen).SelectedItems(1)
+    End If
+    
+    Filename = Right(strPath, Len(strPath) - InStrRev(strPath, "\"))
+    If Right(Filename, 3) = "xls" Or Right(Filename, 4) = "xlsx" Or _
+       Right(Filename, 3) = "XLS" Or Right(Filename, 4) = "XLSX" Then
+        'Excel file
+        Application.ScreenUpdating = False
+        Application.DisplayAlerts = False
+        Workbooks(ThisWorkbook).Worksheets("BULK").Cells.Clear
+        Workbooks(ThisWorkbook).Worksheets("SPAB").Cells.Clear
+        Workbooks(ThisWorkbook).Worksheets("Reorder").Cells.Clear
+        Workbooks(ThisWorkbook).Worksheets("610").Cells.Clear
+        Workbooks(ThisWorkbook).Worksheets("Aging").Cells.Clear
+        Workbooks(ThisWorkbook).Worksheets("Tables").Visible = True
+        Workbooks(ThisWorkbook).Worksheets("Tables").Cells.Clear
+        Workbooks(ThisWorkbook).Worksheets("Charts").ChartObjects.Delete
+        
+        Workbooks.Open (strPath)
+        Workbooks(Filename).Worksheets(1).Cells.Copy Destination:=Workbooks(ThisWorkbook).Worksheets("BULK").Cells
+        Workbooks(Filename).Close
+        
+        Application.ScreenUpdating = True
+        Application.DisplayAlerts = True
+    Else
+        MsgBox "You must select an Excel file."
+        Exit Sub
+    End If
+    
+    FormatBULK
+
+End Sub
+
+Sub FormatBULK()
+
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+
+    With Worksheets("BULK")
+        .Activate
+        .Rows("1:9").Delete
+        .Rows(2).Delete
+        .Cells(1, 1).Value = "PN & Location"
+        .Columns(3).Delete
+        .Cells(1, 6).Value = "Qty"
+        .Cells(1, 7).Value = "Location"
+        .Rows(1).Font.Bold = True
+        
+        Dim i, j As Integer
+        
+        .Range("E2:E" & .Range("E2").End(xlDown).Row).NumberFormat = "@"
+        
+        i = 2
+        While (Len(.Cells(i, 2).Value) > 0)
+            .Cells(i, 5).Value = Left(.Cells(i, 5).Value, 7) & Right(.Cells(i, 5).Value, 2)
+            .Cells(i, 1).Value = .Cells(i, 5).Value & .Cells(i, 7).Value
+            i = i + 1
+        Wend
+        
+        .Range("A1:H1").AutoFilter
+        .Range("A1:H1").Interior.Color = RGB(77, 80, 99)
+        .Range("A1:H1").Font.Color = vbWhite
+        .Columns("A:H").AutoFit
+        .Columns("A:H").HorizontalAlignment = xlCenter
+        .Range("A1:H1").HorizontalAlignment = xlLeft
+        .Range("A2").Select
+        ActiveWindow.FreezePanes = True
+        
+        .Range(.Range("A2"), .Range("A2").End(xlDown)).Interior.Color = RGB(225, 227, 232)
+        
+        .Range("C1").CurrentRegion.Sort key1:=.Range("C1"), dataoption1:=xlSortTextAsNumbers, Header:=xlYes
+        
+        i = 2
+        While (.Cells(i, 3).Value = "ZB")
+            i = i + 1
+        Wend
+        
+        .Range(.Cells(2, 1), .Cells(i - 1, 8)).Name = "copy_to_spab"
+        
+        FormatSPAB
+        
+        While (Len(.Cells(2, 1).Value) = 0)
+            .Rows(2).Delete
+        Wend
+        
+        .Columns(3).Delete
+        .Range("A2:G" & .Range("G2").End(xlDown).Row).Name = "bulk_range"
+    End With
+    
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+        
+End Sub
+
+Sub FormatSPAB()
+
+    With Worksheets("SPAB")
+        ThisWorkbook.Worksheets("BULK").Range("A1:H1").Copy
+        .Activate
+        .Cells(1, 1).Activate
+        .Paste
+        
+        Range("copy_to_spab").Cut
+        .Cells(2, 1).Activate
+        .Paste
+        
+        .Range("B2:H" & .Range("H2").End(xlDown).Row).Name = "DataTable"
+        .Range("A2:H" & .Range("H2").End(xlDown).Row).Name = "spab_range"
+        .Columns("A:H").AutoFit
+        .Range("A1:H1").AutoFilter
+        .Range("A1:H1").HorizontalAlignment = xlLeft
+        .Range("A2").Select
+        ActiveWindow.FreezePanes = True
+        .Range("B2").Select
+    End With
+    
+End Sub
+
+Sub ImportReorder()
+
+    Dim strPath As String
+    Dim ThisWorkbook As String
+    
+    ThisWorkbook = ActiveWorkbook.Name
+    
+    Application.FileDialog(msoFileDialogOpen).AllowMultiSelect = False
+    
+    'make the file dialog visible to the user
+    intChoice = Application.FileDialog(msoFileDialogOpen).Show
+    
+    'determine what choice the user made
+    If intChoice <> 0 Then
+        'get the file path selected by the user
+        strPath = Application.FileDialog(msoFileDialogOpen).SelectedItems(1)
+    End If
+    
+    Filename = Right(strPath, Len(strPath) - InStrRev(strPath, "\"))
+    If Right(Filename, 3) = "xls" Or Right(Filename, 4) = "xlsx" Or _
+       Right(Filename, 3) = "XLS" Or Right(Filename, 4) = "XLSX" Then
+        'Excel file
+        Application.ScreenUpdating = False
+        Application.DisplayAlerts = False
+        
+        Workbooks.Open (strPath)
+        Workbooks(Filename).Worksheets(1).Cells.Copy Destination:=Workbooks(ThisWorkbook).Worksheets("Reorder").Cells
+        Workbooks(Filename).Close
+        
+        Application.ScreenUpdating = True
+        Application.DisplayAlerts = True
+    Else
+        MsgBox "You must select an Excel file."
+        Exit Sub
+    End If
+    
+    FormatReorder
+    Worksheets("Main").Activate
+    
+End Sub
+
+Sub FormatReorder()
+
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+    
+    With Worksheets("Reorder")
+        .Activate
+        .Rows(1).Delete
+        .Rows(2).Delete
+        .Columns("B").Delete
+        .Columns("C").Delete
+        .Columns("D:E").Delete
+        .Columns("F:Y").Delete
+        .Cells(1, 1).Value = "PN & Location"
+        .Cells(1, 6).Value = "Location"
+        .Cells(1, 7).Value = "Aging"
+        
+        Dim i As Integer
+        
+        .Range("D2:D" & .Range("D2").End(xlDown).Row).NumberFormat = "@"
+        
+        i = 2
+        While (Len(.Cells(i, 2).Value) > 0)
+            .Cells(i, 6).Value = Application.WorksheetFunction.VLookup(.Cells(i, 2).Value, Range("DataTable"), 6, False)
+            .Cells(i, 7).Value = Application.WorksheetFunction.VLookup(.Cells(i, 2).Value, Range("DataTable"), 7, False)
+            .Cells(i, 4).Value = Left(.Cells(i, 4).Value, 7) & Right(.Cells(i, 4).Value, 2)
+            .Cells(i, 1).Value = .Cells(i, 4).Value & .Cells(i, 6).Value
+            
+            i = i + 1
+        Wend
+        
+        .Rows(1).Font.Bold = True
+        .Range("A1:G1").AutoFilter
+        .Range("A1:G1").Interior.Color = RGB(77, 80, 99)
+        .Range("A1:G1").Font.Color = vbWhite
+        .Columns("A:G").AutoFit
+        .Columns("A:G").HorizontalAlignment = xlCenter
+        .Range("A1:G1").HorizontalAlignment = xlLeft
+        .Range("A2").Select
+        ActiveWindow.FreezePanes = True
+        
+        .Range(.Range("F2"), .Range("G2").End(xlDown)).Interior.Color = RGB(153, 255, 204)
+        .Range(.Range("A2"), .Range("A2").End(xlDown)).Interior.Color = RGB(225, 227, 232)
+        
+        .Range("A1:G" & .Range("G1").End(xlDown).Row).Name = "reorder_range"
+        
+        i = 2
+        While (Len(.Cells(i, 1).Value) > 0)
+            If (.Cells(i, 3).Value = "72883828" Or .Cells(i, 3).Value = "18370010" Or _
+                .Cells(i, 3).Value = "20637810" Or .Cells(i, 3).Value = "14112510" Or _
+                .Cells(i, 3).Value = "11128110" Or .Cells(i, 3).Value = "14605711" Or _
+                .Cells(i, 3).Value = "18613912" Or .Cells(i, 3).Value = "18630911" Or _
+                .Cells(i, 3).Value = "79361710" Or .Cells(i, 3).Value = "10733710" Or _
+                .Cells(i, 3).Value = "72883830" Or .Cells(i, 3).Value = "18758610" Or _
+                .Cells(i, 3).Value = "77376210" Or .Cells(i, 3).Value = "20152810" Or _
+                .Cells(i, 3).Value = "22754111" Or .Cells(i, 3).Value = "10941610" Or _
+                .Cells(i, 3).Value = "11181810" Or .Cells(i, 3).Value = "19026110" Or _
+                .Cells(i, 3).Value = "14605610" Or .Cells(i, 3).Value = "21189210") Then
+                
+                'wheels & tires vendors
+                .Range(.Cells(i, 1), .Cells(i, 7)).Interior.Color = RGB(255, 0, 0)
+            End If
+            i = i + 1
+        Wend
+    End With
+    
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    
+End Sub
+
+Sub Import610()
+
+    Dim strPath As String
+    Dim ThisWorkbook As String
+    
+    ThisWorkbook = ActiveWorkbook.Name
+    
+    Application.FileDialog(msoFileDialogOpen).AllowMultiSelect = False
+    'make the file dialog visible to the user
+    intChoice = Application.FileDialog(msoFileDialogOpen).Show
+    
+    'determine what choice the user made
+    If intChoice <> 0 Then
+        'get the file path selected by the user
+        strPath = Application.FileDialog(msoFileDialogOpen).SelectedItems(1)
+    End If
+    
+    Filename = Right(strPath, Len(strPath) - InStrRev(strPath, "\"))
+    If Right(Filename, 3) = "xls" Or Right(Filename, 4) = "xlsx" Or _
+       Right(Filename, 3) = "XLS" Or Right(Filename, 4) = "XLSX" Then
+        'Excel file
+        Application.ScreenUpdating = False
+        Application.DisplayAlerts = False
+        
+        Workbooks.Open (strPath)
+        Workbooks(Filename).Worksheets(1).Cells.Copy Destination:=Workbooks(ThisWorkbook).Worksheets("610").Cells
+        Workbooks(Filename).Close
+        
+        Application.ScreenUpdating = True
+        Application.DisplayAlerts = True
+    Else
+        MsgBox "You must select an Excel file."
+        Exit Sub
+    End If
+    
+    Format610
+    
+End Sub
+
+Sub Format610()
+
+    With Worksheets("610")
+        .Activate
+        .Columns("B:D").Delete
+        .Columns("D:J").Delete
+        .Columns("D").Clear
+        .Columns("E").Delete
+        .Columns("G:O").Delete
+        .Cells(1, 1).EntireRow.Insert
+        .Cells(1, 1).Value = "Material"
+        .Cells(1, 2).Value = "Location"
+        .Cells(1, 3).Value = "Inventory"
+        .Cells(1, 4).Value = "Indiv. Value($)"
+        .Cells(1, 5).Value = "Total Value($)"
+        .Cells(1, 6).Value = "Vendor #"
+        .Cells(1, 1).EntireColumn.Insert
+        .Cells(1, 1).Value = "PN & Location"
+        .Cells(1, 8).Value = "SPAB QN"
+        .Cells(1, 9).Value = "BULK QN"
+        .Cells(1, 10).Value = "Parts w/o QN"
+        .Cells(1, 11).Value = "Value($)"
+        
+        Dim i, j, k, length1, length2, length3 As Integer
+        
+        .Range("B2:B" & .Range("B2").End(xlDown).Row).NumberFormat = "@"
+        
+        length1 = 2
+        While (Len(.Cells(length1, 2).Value) > 0)
+            length1 = length1 + 1
+        Wend
+        
+        length2 = 2
+        While (Len(ThisWorkbook.Worksheets("Reorder").Cells(length2, 2).Value) > 0)
+            length2 = length2 + 1
+        Wend
+        
+        length3 = 2
+        While (Len(ThisWorkbook.Worksheets("BULK").Cells(length3, 2).Value) > 0)
+            length3 = length3 + 1
+        Wend
+        
+        i = 2
+        While (i < length1)
+            .Cells(i, 2).Value = Left(.Cells(i, 2).Value, 7) & Right(.Cells(i, 2).Value, 2)
+            .Cells(i, 1).Value = .Cells(i, 2).Value & .Cells(i, 3).Value
+            i = i + 1
+        Wend
+        
+        .Range("A1:K1").Font.Bold = True
+        .Range("A1:K1").AutoFilter
+        .Range("A1:K1").Interior.Color = RGB(77, 80, 99)
+        .Range("A1:K1").Font.Color = vbWhite
+        .Columns("A:K").AutoFit
+        .Columns("A:K").HorizontalAlignment = xlCenter
+        .Range("A1:K1").HorizontalAlignment = xlLeft
+        ActiveWindow.FreezePanes = False
+        
+        .Cells(1, 1).EntireRow.Insert
+        length1 = length1 + 1
+        
+        k = 3
+        While (k < length1)
+            .Cells(k, 5).Value = (.Cells(k, 6).Value / .Cells(k, 4).Value)
+            k = k + 1
+        Wend
+        
+        i = 3
+        j = 2
+        While (i < length1)
+            While (j < length2)
+                If (ThisWorkbook.Worksheets("Reorder").Cells(j, 1).Value = .Cells(i, 1).Value) Then
+                    .Cells(i, 8).Value = .Cells(i, 8).Value + ThisWorkbook.Worksheets("Reorder").Cells(j, 5).Value
+                    j = j + 1
+                Else
+                    j = j + 1
+                End If
+            Wend
+            
+            If (Len(.Cells(i, 8).Value) = 0) Then
+                .Cells(i, 8).Value = 0
+            End If
+            
+            i = i + 1
+            j = 2
+            
+            Application.StatusBar = "SPAB Progress: " & i & " of " & k & ": " & Format(i / k, "0%")
+            DoEvents
+        Wend
+        
+        i = 3
+        j = 2
+        While (i < length1)
+            While (j < length3)
+                If (ThisWorkbook.Worksheets("BULK").Cells(j, 1).Value = .Cells(i, 1).Value) Then
+                    .Cells(i, 9).Value = .Cells(i, 9).Value + ThisWorkbook.Worksheets("BULK").Cells(j, 5).Value
+                    j = j + 1
+                Else
+                    j = j + 1
+                End If
+            Wend
+            
+            If (Len(.Cells(i, 9).Value) = 0) Then
+                .Cells(i, 9).Value = 0
+            End If
+            
+            i = i + 1
+            j = 2
+            
+            Application.StatusBar = "BULK Progress: " & i & " of " & k & ": " & Format(i / k, "0%")
+            DoEvents
+        Wend
+        
+        Application.StatusBar = False
+        
+        'parts and values
+        i = 3
+        While (i < length1)
+            .Cells(i, 10).Value = .Cells(i, 4).Value - (.Cells(i, 8).Value + .Cells(i, 9).Value)
+            .Cells(i, 11).Value = .Cells(i, 10).Value * .Cells(i, 5).Value
+            i = i + 1
+        Wend
+        
+        .Range("F1").Value = "SUMS"
+        .Range("G1").Value = "-->"
+        
+        'subtotals
+        .Range("H1").Select
+        ActiveCell.FormulaR1C1 = "=SUBTOTAL(9, R[2]C:R[10000]C)"
+        .Range("I1").Select
+        ActiveCell.FormulaR1C1 = "=SUBTOTAL(9, R[2]C:R[10000]C)"
+        .Range("J1").Select
+        ActiveCell.FormulaR1C1 = "=SUBTOTAL(9, R[2]C:R[10000]C)"
+        .Range("K1").Select
+        ActiveCell.FormulaR1C1 = "=SUBTOTAL(9, R[2]C:R[10000]C)"
+        
+        .Range("M2").Interior.Color = RGB(255, 0, 0)
+        .Range("N2").Value = "-> wheels/tires vendor"
+        
+        .Range("A3").Select
+        ActiveWindow.FreezePanes = True
+        
+        .Range("F1:K1").Font.Bold = True
+        .Range("F1:K1").Font.Italic = True
+        .Range("F1:K1").Interior.Color = RGB(153, 255, 153)
+        
+        .Range(.Range("A3"), .Range("A3").End(xlDown)).Interior.Color = RGB(225, 227, 232)
+        .Range(.Range("H3"), .Range("I3").End(xlDown)).Interior.Color = RGB(153, 255, 204)
+        
+        i = 3
+        While (i < length1)
+            If (.Cells(i, 7).Value = "72883828" Or .Cells(i, 7).Value = "18370010" Or _
+                .Cells(i, 7).Value = "20637810" Or .Cells(i, 7).Value = "14112510" Or _
+                .Cells(i, 7).Value = "11128110" Or .Cells(i, 7).Value = "14605711" Or _
+                .Cells(i, 7).Value = "18613912" Or .Cells(i, 7).Value = "18630911" Or _
+                .Cells(i, 7).Value = "79361710" Or .Cells(i, 7).Value = "10733710" Or _
+                .Cells(i, 7).Value = "72883830" Or .Cells(i, 7).Value = "18758610" Or _
+                .Cells(i, 7).Value = "77376210" Or .Cells(i, 7).Value = "20152810" Or _
+                .Cells(i, 7).Value = "22754111" Or .Cells(i, 7).Value = "10941610" Or _
+                .Cells(i, 7).Value = "11181810" Or .Cells(i, 7).Value = "19026110" Or _
+                .Cells(i, 7).Value = "14605610" Or .Cells(i, 7).Value = "21189210") Then
+            
+                'wheels & tires vendors
+                .Range(.Cells(i, 1), .Cells(i, 11)).Interior.Color = RGB(255, 0, 0)
+            End If
+            i = i + 1
+        Wend
+    End With
+    
+'    Application.ScreenUpdating = False
+'    Application.DisplayAlerts = False
+    
+    FormatAging
+    pivots
+    
+'    Application.ScreenUpdating = True
+'    Application.DisplayAlerts = True
+    
+    ThisWorkbook.Worksheets("Charts").Activate
+    
+End Sub
+
+Sub FormatAging()
+
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+
+    With Worksheets("Aging")
+        .Activate
+        .Cells(1, 1).Select
+        Range("reorder_range").Copy
+        .Paste
+        
+        Dim i, j As Integer
+        
+        i = 2
+        While (Len(.Cells(i, 1).Value) > 0)
+            i = i + 1
+        Wend
+        
+        .Cells(i, 1).Select
+        Range("bulk_range").Copy
+        .Paste
+        
+        .Range("A1:G1").AutoFilter
+        .Columns("A:G").AutoFit
+        .Columns("A:G").HorizontalAlignment = xlCenter
+        .Range("A1:G1").HorizontalAlignment = xlLeft
+        .Range("A2").Select
+        ActiveWindow.FreezePanes = True
+        .Cells(1, 1).Select
+        
+        j = 2
+        While (j < i)
+            If (.Cells(j, 3).Value = "72883828" Or .Cells(j, 3).Value = "18370010" Or _
+                .Cells(j, 3).Value = "20637810" Or .Cells(j, 3).Value = "14112510" Or _
+                .Cells(j, 3).Value = "11128110" Or .Cells(j, 3).Value = "14605711" Or _
+                .Cells(j, 3).Value = "18613912" Or .Cells(j, 3).Value = "18630911" Or _
+                .Cells(j, 3).Value = "79361710" Or .Cells(j, 3).Value = "10733710" Or _
+                .Cells(j, 3).Value = "72883830" Or .Cells(j, 3).Value = "18758610" Or _
+                .Cells(j, 3).Value = "77376210" Or .Cells(j, 3).Value = "20152810" Or _
+                .Cells(j, 3).Value = "22754111" Or .Cells(j, 3).Value = "10941610" Or _
+                .Cells(j, 3).Value = "11181810" Or .Cells(j, 3).Value = "19026110" Or _
+                .Cells(j, 3).Value = "14605610" Or .Cells(j, 3).Value = "21189210") Then
+            
+                'wheels & tires vendors
+                .Range(.Cells(j, 1), .Cells(j, 7)).Interior.Color = RGB(255, 0, 0)
+            End If
+            j = j + 1
+        Wend
+        
+        .Range("B1").CurrentRegion.Sort key1:=.Range("B1"), dataoption1:=xlSortTextAsNumbers, Header:=xlYes
+        
+        j = 2
+        While (Len(.Cells(j, 2).Value) > 0)
+            If (.Cells(j, 2).Value = .Cells(j + 1, 2).Value) Then
+                .Rows(j).Delete
+            Else
+                j = j + 1
+            End If
+        Wend
+        
+        .Cells(2, 1).Select
+    End With
+    
+    ThisWorkbook.Worksheets("610").Activate
+    
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    
+End Sub
+
+Sub pivots()
+
+    Range("A2").Select
+    ActiveWorkbook.PivotCaches.Create(SourceType:=xlDatabase, SourceData:= _
+        "610!R2C1:R4279C11", Version:=xlPivotTableVersion15).CreatePivotTable _
+        TableDestination:="Tables!R1C1", TableName:="PivotTable1", DefaultVersion _
+        :=xlPivotTableVersion15
+    Sheets("Tables").Select
+    Cells(1, 1).Select
+    ActiveSheet.Shapes.AddChart2(201, xlColumnClustered).Select
+    ActiveChart.SetSourceData Source:=Range("Tables!$A$1:$C$18")
+    With ActiveChart.PivotLayout.PivotTable.PivotFields("Location")
+        .Orientation = xlRowField
+        .Position = 1
+    End With
+    ActiveChart.PivotLayout.PivotTable.AddDataField ActiveChart.PivotLayout. _
+        PivotTable.PivotFields("SPAB QN"), "Sum of SPAB QN", xlSum
+    ActiveChart.PivotLayout.PivotTable.AddDataField ActiveChart.PivotLayout. _
+        PivotTable.PivotFields("BULK QN"), "Sum of BULK QN", xlSum
+    ActiveChart.Parent.Cut
+    Sheets("Charts").Select
+    Range("A1").Select
+    ActiveSheet.Paste
+
+    Sheets("610").Select
+    ActiveWorkbook.Worksheets("Tables").PivotTables("PivotTable1").PivotCache. _
+        CreatePivotTable TableDestination:="Tables!R7C1", TableName:="PivotTable2" _
+        , DefaultVersion:=xlPivotTableVersion15
+    Sheets("Tables").Select
+    Cells(10, 1).Select
+    ActiveSheet.Shapes.AddChart2(201, xlColumnClustered).Select
+    ActiveChart.SetSourceData Source:=Range("Tables!$A$7:$C$24")
+    With ActiveChart.PivotLayout.PivotTable.PivotFields("Location")
+        .Orientation = xlRowField
+        .Position = 1
+    End With
+    ActiveChart.PivotLayout.PivotTable.AddDataField ActiveChart.PivotLayout. _
+        PivotTable.PivotFields("Parts w/o QN"), "Sum of Parts w/o Open QN", xlSum
+    ActiveChart.PivotLayout.PivotTable.AddDataField ActiveChart.PivotLayout. _
+        PivotTable.PivotFields("Value($)"), "Sum of Value($)", xlSum
+    ActiveChart.Parent.Cut
+    Sheets("Charts").Select
+    Range("J1").Select
+    ActiveSheet.Paste
+
+    Sheets("Aging").Select
+    ActiveWorkbook.PivotCaches.Create(SourceType:=xlDatabase, SourceData:= _
+        "Aging!R1C1:R2864C7", Version:=xlPivotTableVersion15).CreatePivotTable _
+        TableDestination:="Tables!R13C1", TableName:="PivotTable3", DefaultVersion _
+        :=xlPivotTableVersion15
+    Sheets("Tables").Select
+    Cells(13, 1).Select
+    ActiveSheet.Shapes.AddChart2(201, xlColumnClustered).Select
+    ActiveChart.SetSourceData Source:=Range("Tables!$A$13:$C$30")
+    With ActiveChart.PivotLayout.PivotTable.PivotFields("Location")
+        .Orientation = xlRowField
+        .Position = 1
+    End With
+    ActiveChart.PivotLayout.PivotTable.AddDataField ActiveChart.PivotLayout. _
+        PivotTable.PivotFields("Aging"), "Sum of Aging", xlSum
+    ActiveChart.ChartType = xlDoughnut
+    ActiveChart.ChartTitle.Select
+    Selection.Caption = "Total Aging"
+    ActiveChart.FullSeriesCollection(1).Select
+    ActiveChart.FullSeriesCollection(1).ApplyDataLabels
+    ActiveChart.ChartArea.Select
+    ActiveChart.Parent.Cut
+    Sheets("Charts").Select
+    Range("A16").Select
+    ActiveSheet.Paste
+    Range("I20").Select
+    
+    ThisWorkbook.Worksheets("Tables").Visible = False
+    
+End Sub
